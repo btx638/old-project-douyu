@@ -1,0 +1,10 @@
+﻿import wsock.tcp.client;
+
+import abz.douyu.client
+
+namespace abz.douyu;
+class keepLive{
+	ctor(handle){
+		var tcpClient = ..wsock.tcp.client(,handle);
+	};
+}

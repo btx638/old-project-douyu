@@ -1,0 +1,639 @@
+﻿
+namespace abz.douyu.msgType;
+// 客户端消息类型	
+cilent = {
+	loginreq = {
+		info = "登录请求";
+	}
+	keeplive = {
+		info = "客户端心跳";
+	}
+	joingroup = {
+		info = "入组";
+	}
+	logout = {
+		info = "登出";
+	}
+	chatmessage = {
+		info = "发送弹幕";
+	}
+	// vk 为时间戳+"7oE9nPEG9xXV69phU31FYCLUagKeYtsF"+devid的字符串拼接结果的MD5值   password = 密码的MD5
+	// type@=loginreq/username@=auto_zcVz3ZndD0/ct@=0/password@=7344fddf39ba0b455d3bdbf36bbf4d9f/roomid@=442280/devid@=F1E9CFD38A39E46BF6C938D187EEEB01/rt@=1473303669/vk@=cdbb7a50c655cc54c5b83a4c2e8bce3f/ver@=20150929/aver@=2016083101/ltkid@=83131024/biz@=1/stk@=366653687c77fc6e/
+	// type@=loginres/userid@=26731690/roomgroup@=5/pg@=1/sessionid@=1722838211/username@=auto_zcVz3ZndD0/nickname@=/live_stat@=0/is_illegal@=0/ill_ct@=/ill_ts@=0/now@=1473303668/ps@=1/es@=1/it@=2/its@=2/npv@=0/best_dlev@=0/cur_lev@=0/nrc@=0/
+	
+	// 发送登陆
+	// type@=loginreq/username@=auto_zcVz3ZndD0/password@=1234567890123456/roomid@=442280/
+	// 返回
+	// type@=loginres/userid@=0/roomgroup@=0/pg@=0/sessionid@=0/username@=/nickname@=/live_stat@=0/is_illegal@=0/ill_ct@=/ill_ts@=0/now@=0/ps@=0/es@=0/it@=0/its@=0/npv@=0/best_dlev@=0/cur_lev@=0/nrc@=3063142669/sid@=70042/
+	
+	// 入组
+	// type@=joingroup/rid@=442280/gid@=1/
+	
+	// 登出
+	// type@=logout/
+	
+	// 发送弹幕
+	// type@=chatmessage/receiver@=0/content@=95503221/scope@=/col@=0/
+	// 返回
+	// type@=chatmsg/rid@=442280/uid@=26731690/nn@=/txt@=95503221/cid@=79e8badc0f1e47e2a94a030000000000/ic@=avatar@Sface@S201608@S20@S43337750d6a5de525d7db7c93042ea8b/level@=5/rg@=5/el@=/
+	
+	// 禁言1分钟
+	// ptype@=newblackreq/uid@=62181494/oid@=26731690/otype@=2/rid@=442280/blacktype@=1/limittime@=60/reason@=/
+	// 返回
+	// type@=newblackres/ret@=0/rid@=442280/gid@=1/otype@=2/sid@=26731690/did@=62181494/snic@=/dnic@=/endtime@=1473304680/
+	
+	// 禁言1天
+	// type@=newblackreq/uid@=62181494/oid@=26731690/otype@=2/rid@=442280/blacktype@=1/limittime@=86400/reason@=/
+	
+	// 禁言IP段1天
+	// ptype@=newblackreq/uid@=62181494/oid@=26731690/otype@=2/rid@=442280/blacktype@=2/limittime@=60/reason@=/
+	// 返回
+	// type@=newblackres/ret@=0/rid@=442280/gid@=1/otype@=2/sid@=26731690/did@=62181494/snic@=/dnic@=/endtime@=1473304811/
+	
+	// 发送任命房管
+	// type@=setadminreq/userid@=62181494/group@=4/
+	// 返回
+	// type@=setadminres/rescode@=0/userid@=62181494/opuid@=26731690/group@=4/adnick@=/rid@=442280/gid@=1/level@=1/
+	
+	// 发送解除房管
+	// type@=setadminreq/userid@=62181494/group@=1/
+	// 返回
+	// type@=setadminres/rescode@=0/userid@=62181494/opuid@=26731690/group@=1/adnick@=/rid@=442280/gid@=1/level@=1/
+	
+	// 发送未知
+	// type@=reqog/uid@=26731690/
+	
+	// 发送未知
+	// type@=mrkl/
+	// 返回未知
+	// type@=mrkl/
+}
+// 服务器	
+server = {
+	error = {
+		info = "服务端消息错误码解析";
+		data = {
+			code = {	
+				["0"] = "操作成功";	
+				["51"] = "数据传输出错";
+				["52"] = "服务器关闭";
+				["204"] = "房间id错误";
+				["其他错误码"] = "服务器内部异常";	
+			}	
+		}
+	}
+	loginres = {
+		info = "登录响应";
+		data = {
+			userid = "用户ID";
+			roomgroup = "房间权限组";
+			pg = "平台权限组";
+			sessionid = "会话ID";
+			username = "用户名";
+			nickname = "用户昵称";
+			live_stat = "直播状态";
+			is_illegal = "是否违规";
+			ill_ct = "违规提醒内容";
+			ill_ts = "违规提醒开始时间戳";
+			now = "系统当前时间";
+			ps = "手机绑定标示";
+			es = "邮箱绑定标示";
+			it = "认证类型";
+			its = "认证状态";
+			npv = "是否需要手机验证";
+			best_dlev = "最高酬勤等级";
+			cur_lev = "酬勤等级";
+			nrc = "观看房间需要的条件";
+			ih = "是否进房隐身";
+			sid = "服务 id";
+			sahf = "扩展字段，一般不使用，可忽略";		
+		}			
+	}
+	keeplive = {
+		info = "服务端心跳";
+		data = {
+			tick = "对应客户端心跳请求中的tick";
+		}
+	}
+	newblackres = {
+		info = "禁止发言";
+		data = {
+			sid = "操作者uid";
+			did = "禁言用户uid";
+			snic = "操作者昵称";
+			dnic = "禁言用户昵称";
+			endtime = "禁言到期时间";
+			ret = "0(操作成功)";
+			otype = {
+				info = "封禁者身份";
+				data = {
+					["1"] = "房管";
+					["2"] = "主播";
+					["3"] = "超管";
+				}
+			}
+		}
+	}
+	rg = {
+		info = "房间权限组";
+		data = {
+			["5"] = "主播";
+			["4"] = "房管";
+		} 
+	}
+	pg = {
+		info = "平台权限组";
+		data = {
+			["5"] = "超管";
+		}
+	}
+	nl = {
+		info = "贵族";
+		data = {
+			["1"] = "骑士";
+			["2"] = "子爵";
+			["3"] = "伯爵";
+			["4"] = "公爵";
+			["5"] = "国王";
+			["6"] = "皇帝";
+			["7"] = "游侠";
+		}
+	}
+	gt = {
+		// 图标地址 https://shark.douyucdn.cn/app/douyu/res/page/room-normal/user_honor/honor${头衔等级}.png?v=20160620
+		info = "礼物头衔,1天内充值XX鱼翅";
+		data = {
+			["1"] = "铜粉";
+			["2"] = "银粉";
+			["3"] = "金粉";
+		}
+	}		
+	chatmsg = { 
+		info = "弹幕";
+		data = {
+			gid = "弹幕组id";//
+			rid = "房间id";//
+			uid = "发送者uid";//
+			nn = "发送者昵称";//
+			txt = "弹幕文本内容";//
+			cid = "弹幕唯一ID";//
+			level = "用户等级";//
+			gt = "礼物头衔：默认值0（表示没有头衔）";
+			col = "颜色：默认值0（表示默认颜色弹幕）";
+			ct = "客户端类型：默认值0（表示web用户）";// 1=手机 空=web
+			rg = "房间权限组：默认值1（表示普通权限用户）";// 5=房主(主播) 4=房管  (不存在则为普通用户)
+			pg = "平台权限组：默认值1（表示普通权限用户）";// 5=超管 非超管为空
+			dlv = "酬勤等级：默认值0（表示没有酬勤）";
+			dc = "酬勤数量：默认值0（表示没有酬勤数量）";
+			bdlv = "最高酬勤等级：默认值0（表示全站都没有酬勤）";	
+			cmt = "弹幕具体类型: 默认值 0（普通弹幕）";
+			sahf = "扩展字段，一般不使用，可忽略";
+			ic = "用户头像";
+			nl = "贵族等级";
+			nc = "贵族弹幕标识,0-非贵族弹幕,1-贵族弹幕,默认值 0";
+			gatin = "进入网关服务时间戳";
+			gatout = "离开网关服务时间戳";
+			chtin = "进入房间服务时间戳";
+			chtout = "离开房间服务时间戳";
+			repin = "进入发送服务时间戳";
+			repout = "离开发送服务时间戳";
+			bnn = "徽章昵称";
+			bl = "徽章等级";
+			brid = "徽章房间 id";
+			hc = "徽章信息校验码";
+			ol = "主播等级";
+			rev = "是否反向弹幕标记: 0-普通弹幕，1-反向弹幕, 默认值 0";
+			hl = "是否高亮弹幕标记: 0-普通，1-高亮, 默认值 0";
+			ifs = "是否粉丝弹幕标记: 0-非粉丝弹幕，1-粉丝弹幕, 默认值 0";
+			p2p = "服务功能字段";
+			el = "用户获得的连击特效：数组类型，数组包含 eid（特效 id）,etp（特效类型）,sc（特效次数）信息，ef（特效标志）。";		
+		}
+	}
+	onlinegift = { 
+		info = "领取在线鱼丸暴击";
+		data = {
+			type = "表示为“领取在线鱼丸”消息，固定为 onlinegift";
+			rid = "房间 ID";
+			uid = "用户 ID";
+			gid = "弹幕分组 ID";
+			sil = "鱼丸数";
+			["if"] = "领取鱼丸的等级";
+			ct = "客户端类型标识";
+			nn = "用户昵称";
+			ur = "鱼丸之刃倍率";
+			level = "用户等级";
+			btype = "广播类型";			
+		}
+	}
+	// 本房间可以接收本房间的火箭等网站广播消息
+	dgb = { 
+		info = "赠送礼物";
+		data = {
+			gid = "弹幕分组 ID";
+			gfid = "礼物 id";
+			gs = "礼物显示样式";
+			uid = "用户 id";
+			nn = "用户昵称";
+			bg = "大礼物标识：默认值为 0（表示是小礼物）";
+			ic = "用户头像";
+			eid = "礼物关联的特效 id";
+			level = "用户等级";
+			dw = "主播体重";
+			gfcnt = "礼物个数：默认值 1（表示 1 个礼物）";
+			hits = "礼物连击次数：默认值 1（表示 1 连击）";
+			dlv = "酬勤头衔：默认值 0（表示没有酬勤）";
+			dc = "酬勤个数：默认值 0（表示没有酬勤数量）";
+			bdl = "全站最高酬勤等级：默认值 0（表示全站都没有酬勤）";
+			rg = "房间身份组：默认值 1（表示普通权限用户）";
+			pg = "平台身份组：默认值 1（表示普通权限用户）";
+			rpid = "扩展字段 id";
+			rpidn = "扩展字段 id";
+			slt = "扩展字段，一般不使用";
+			elt = "扩展字段，一般不使用";
+			nl = "贵族等级：默认值 0（表示不是贵族）";
+			sahf = "扩展字段，一般不使用，可忽略";
+			bnn = "徽章昵称";
+			bl = "徽章等级";
+			brid = "徽章房间 id";
+			hc = "徽章信息校验码";
+			fc = "攻击道具的攻击力";	
+		}				
+	}	
+	uenter = { 	
+		info = "用户进房通知";
+		data = {
+			rid = "房间 ID";
+			gid = "弹幕分组 ID";
+			uid = "用户 ID";
+			nn = "用户昵称";
+			str = "战斗力";
+			level = "新用户等级";
+			gt = "礼物头衔：默认值 0（表示没有头衔）";
+			rg = "房间权限组：默认值 1（表示普通权限用户）";
+			pg = "平台身份组：默认值 1（表示普通权限用户）";
+			dlv = "酬勤等级：默认值 0（表示没有酬勤）";
+			dc = "酬勤数量：默认值 0（表示没有酬勤数量）";
+			bdlv = "最高酬勤等级：默认值 0";
+			ic = "用户头像";
+			nl = "贵族等级";
+			ceid = "扩展功能字段 id";
+			crw = "用户栏目上周排名";
+			ol = "主播等级";
+			el = "用户获得的连击特效：数组类型，数组包含 eid（特效 id）,etp（特效类型）, ,sc（特效次数）信息，ef（特效标志）。";
+			sahf = "扩展字段，一般不使用，可忽略";
+			wgei = "页游欢迎特效 id";
+		}		
+	}
+	bc_buy_deserve = { 
+		info = "用户赠送酬勤通知";
+		data = {
+			sid = "用户uid";//
+			rid = "房间ID";//
+			gid = "弹幕分组ID";//
+			level = "用户等级";//
+			cnt = "赠送数量";//
+			hits = "赠送连击次数";//
+			lev = "酬勤等级";//
+			sui = {
+				info = "用户信息序";		
+				data = {
+					id = "用户 id";
+					name = "用户名";
+					nick = "用户昵称";
+					icon = "用户头像";
+					rt = "注册时间";
+					pg = "平台权限组";
+					bg = "扩展字段信息";
+					rg = "赠送者房间权限组";
+					weight = "体重";
+					cps_id = "扩展功能字段 id";
+					ps = "手机绑定标识";
+					es = "邮箱绑定标识";
+					it = "认证类型";
+					its = "认证状态";
+					global_ban_lev = "用户发言状态";
+					experience = "用户经验值";
+					cur_lev = "酬勤等级";
+					cq_cnt = "相应的酬勤等级所赠送的酬勤个数";
+					best_dlev = "最高酬勤等级";
+					level = "等级";
+					gt = "礼物头衔";
+					hfr = "扩展功能字段";
+					sagid = "扩展功能字段";
+					fs = "用户的关注状态： 0-未关注；1-关注";
+					el = "用户获得的连击特效：数组类型，数组包含 eid（特效 id）,etp（特效类型）,sc（特效次数）信息，ef（特效标志）。";	
+				}
+			}	
+		}
+	}
+	rss = { 
+		info = "房间开关播提醒";
+		data = {
+			type = "表示为“房间开播提醒”消息，固定为 rss";
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			ss = "直播状态，0-没有直播，1-正在直播";
+			code = "类型";
+			rt = "开关播原因";
+			rtv = "关播原因类型的值";
+			notify = "通知类型";
+			endtime = "关播时间（仅关播时有效）";	
+		}
+	}
+	ranklist = { 
+		info = "广播排行榜消息";
+		data = {
+			rid = "房间id";
+			ts = "排行榜更新时间戳";
+			gid = "弹幕分组id";	
+			list_all = {
+				info = "总榜";
+				data = {
+					nickname = "用户昵称";//
+					level = "用户等级";//
+					uid ="用户id";//
+					crk = "当前排名";//
+					gold = "当前贡献值";//
+					lrk = "上次排名";//
+					rs = "排名变化，-1：下降，0：持平，1：上升";//
+					gold_cost = "当前贡献值";					
+				}
+			}
+			list = {
+				info = "周榜";
+				data = {
+					uid = "用户id";
+					crk = "当前排名";
+					lrk = "上次排名";
+					rs = "排名变化，-1：下降，0：持平，1：上升";
+					gold_cost = "当前贡献值";					
+				}
+			}
+			list_day = {
+				info = "日榜";
+				data = {
+					uid = "用户id";
+					crk = "当前排名";
+					lrk = "上次排名";
+					rs = "排名变化，-1：下降，0：持平，1：上升";
+					gold_cost = "当前贡献值";					
+				}
+			}		
+		}			
+	}
+	ssd = {
+		info = "超级弹幕";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			sdid = "超级弹幕 id";
+			trid = "跳转房间 id";
+			content = "超级弹幕的内容";
+			url = "跳转 url";
+			clitp = "客户端类型";
+			jmptp = "跳转类型";		
+		}
+	}
+	spbc = { 
+		info = "房间内礼物广播";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			sn = "赠送者昵称";
+			dn = "受赠者昵称";
+			gn = "礼物名称";
+			gc = "礼物数量";
+			drid = "赠送房间";
+			gs = "广播样式";
+			gb = "是否有礼包（0-无礼包，1-有礼包）";
+			es = "广播展现样式（1-火箭，2-飞机 4跑车 5游艇）";
+			gfid = "礼物 id";
+			eid = "特效 id";
+			bgl = "广播礼物类型";
+			ifs = "服务功能字段，可忽略";
+			cl2 = "栏目分类广播字段";
+		}	
+	}
+	ggbb = { 
+		info = "房间用户抢红包";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			gt = "抢到鱼丸的类型:0-普通运气（可能没有此字段）1-手气王 2-暴击 X4 3-暴击 X3 4-暴击 X2 5-暴击 X1";
+			sl = "抢到的鱼丸数量";
+			sid = "礼包产生者 id";
+			did = "抢礼包者 id";
+			snk = "礼包产生者昵称";
+			dnk = "抢礼包者昵称";
+			rpt = "礼包类型";	
+		}
+	}	
+	rankup = { 
+		info = "房间内top10变化消息";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			uid = "用户 id";
+			drid = "目标房间 id";
+			rt = "房间所属栏目类型";
+			bt = "广播类型";
+			sz = "展示区域类型";
+			nk = "用户昵称";
+			rkt = "top10 榜的类型 1-周榜 2-总榜 4-日榜";
+			rn = "上升后的排名";
+			ri = "功能扩展字段，一般不使用";	
+		}												
+	}
+	al = {
+		info = "主播离开提醒";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			aid = "主播用户 id";		
+		}
+	}
+	ab = {
+		info = "主播回来继续直播提醒";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			aid = "主播用户 id";		
+		}
+	}
+	ruclp = {
+		info = "用户点赞推送通知";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			ui_list = {
+				info = "点赞用户信息列表";
+				data = {
+					uid = "用户 id";
+					nn = "用户昵称";
+					rg = "用户房间权限组";
+					pg = "用户平台权限组";
+					level = "用户等级";
+					gt = "用户礼物头衔";
+					sahf = "扩展字段，一般不使用，可忽略";					
+				}	
+			}	
+		}
+	}
+	gpbc = {
+		info = "房间内用户抢到道具消";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			cnt = "抢到的道具数量";
+			sid = "派发者 id";
+			did = "接收者 id";
+			rpt = "宝箱类型";
+			snk = "派发者昵称";
+			dnk = "接收者昵称";
+			pnm = "道具名称";	
+		}
+	}	
+	online_noble_list = {
+		info = "房间贵族列表广播";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			cnt = "抢到的道具数量";
+			nl = {
+				info = "贵族列表";
+				data = {
+					uid = "用户 id";
+					nn = "用户昵称";
+					rg = "用户房间权限组";
+					pg = "用户平台权限组";
+					icon = "用户头像";
+					lv = "用户等级";
+					sahf = "扩展字段，一般不使用，可忽略";				
+				}
+			}
+		}
+	}
+	upgrade = {
+		info = "用户等级提升";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			uid = "用户 id";
+			nn = "用户昵称";
+			level = "用户等级";
+			ic = "用户头像";		
+		}
+	}
+	ul_ranklist = {
+		info = "房间用户等级排行榜";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			ts = "榜单更新时间戳";
+			list_level = {
+				info = "等级榜用户列表";
+				data = {
+					uid = "用户 id";
+					crk = "排行榜中当前排名";
+					nn = "用户昵称";
+					ic = "用户头像";
+					rg = "用户房间权限组";
+					pg = "用户平台权限组";
+					level = "用户等级";
+					gt = "用户礼物头衔";
+					sahf = "扩展字段，一般不使用，可忽略";					
+				}
+			}
+		}
+	}
+	upbc = {
+		info = "主播等级提升广播";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			lev = "主播最新等级";
+			pu = "是否需要弹窗 0-不需要，1-需要";	
+		}
+	}
+	newblackres = {
+		info = "禁言操作结果";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			ret = "错误码";
+			otype = "操作者类型，0：普通用户，1：房管：，2：主播，3：超管";
+			sid = "操作者 id";
+			did = "被操作者 id";
+			snic = "操作者昵称";
+			dnic = "被禁言用户昵称";
+			endtime = "禁言的失效时间戳";
+		}
+	}
+	blab = {
+		info = "徽章等级提升";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			uid = "用户 id";
+			nn = "用户昵称";
+			lbl = "上个徽章等级";
+			bl = "徽章等级";
+			ba = "广播区域字段";
+			bnn = "徽章昵称";	
+		}
+	}
+	frank = {
+		info = "粉丝排行榜";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			fc = "粉丝总人数";
+			bnn = "徽章昵称";
+			ver = "榜单版本号";
+			list = {
+				info = "榜单结构";
+				data = {
+					uid = "用户 id";
+					fim = "粉丝亲密度";
+					nn = "用户昵称";
+					ic = "用户头像";
+					rg = "用户房间权限组";
+					pg = "用户平台权限组";
+					bl = "徽章等级";
+					hd = "扩展功能字段";
+					ri = "扩展字段，一般不使用";
+					lev = "用户等级";
+					nl = "贵族勋章 id";
+					sahf = "扩展字段，一般不使用，可忽略";				
+				}
+			}
+		}
+	}
+	srres = {
+		info = "用户分享了直播间通知";
+		data = {
+			rid = "房间 id";
+			gid = "弹幕分组 id";
+			uid = "用户（分享者）id";
+			nickname = "用户（分享者）昵称";
+			exp = "用户获得的经验值";
+		}
+	}		
+	rri = {
+		info = "栏目排行榜变更";
+		data = {
+			rid = "房间 id";
+			rn = "榜单名称";
+			cate_id = "分类 ID";
+			uid = "主播 ID";
+			sc = "当前 member 的分数";
+			idx = "当前 member 的排名";
+			bcr = "人气广播的范围";
+			ibc = "人气广播通知";
+			an = "主播名称";
+			rktype = "榜单类型， 1 - 栏目排行， 2 - 礼物周星";
+			tag_id = "分类 ID";
+			gift_id = "礼物 id";
+		}
+	}										
+}

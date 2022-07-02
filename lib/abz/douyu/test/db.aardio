@@ -1,0 +1,296 @@
+﻿//db 数据库
+import fsys;
+import sqlite;
+namespace abz.douyu.test;
+class db{  
+	ctor( roomId ){
+		roomId = tostring(roomId);
+		var dbName = roomId ++ ".db";
+		var dir = ..fsys.createDir( "\database\" )
+		var db, err = ..sqlite(dir++dbName);
+		// 数据库表名
+		var dbTbName = genTableName(roomId);
+		// 建立用户信息
+		if( !db.existsTable( dbTbName.userInfo ) ){
+			db.exec("CREATE TABLE @tableName( 
+				uid TEXT UNIQUE PRIMARY KEY,
+				nickname TEXT,
+				last_enter_time TEXT, 
+				last_enter_level TEXT,
+				enter_count INTEGER,
+				last_enter_room_group TEXT,
+				last_enter_platform_group TEXT			
+			)",{
+				tableName = dbTbName.userInfo;
+			})
+		}		
+		// 进房记录
+		if( !db.existsTable(dbTbName.enterRoom) ){
+			db.exec("CREATE TABLE @tableName(
+				uid TEXT,
+				nickname TEXT,
+				level TEXT,
+				send_time INTEGER,
+				room_group TEXT,
+				platform_group TEXT							
+			)",{
+				tableName = dbTbName.enterRoom;
+			})
+		}
+		// 礼物 bonus_point 贡献值
+		if( !db.existsTable(dbTbName.gift) ){
+			db.exec("CREATE TABLE @tableName(
+				uid TEXT,
+				nickname TEXT,
+				level TEXT,
+				gift_name TEXT,
+				gift_id TEXT,
+				bonus_point TEXT,
+				count TEXT,
+				hit TEXT,
+				send_time INTEGER,
+				room_group TEXT,
+				platform_group TEXT
+			)",{
+				tableName = dbTbName.gift;
+			})
+		}
+		// 酬勤
+		if( !db.existsTable( dbTbName.chouQin ) ){
+			db.exec("CREATE TABLE @tableName(
+				uid TEXT,
+				nickname TEXT,
+				level TEXT,
+				chou_qin_level TEXT,
+				count TEXT,
+				hit TEXT,
+				send_time INTEGER,
+				room_group TEXT,
+				platform_group TEXT
+			)",{
+				tableName = dbTbName.chouQin;
+			})			
+		}
+		// 弹幕
+		if( !db.existsTable(dbTbName.chat) ){
+			db.exec("CREATE TABLE @tableName(
+				uid TEXT,
+				nickname TEXT,
+				level TEXT,
+				txt TEXT,
+				send_time INTEGER,
+				room_group TEXT,
+				platform_group TEXT
+			)",{
+				tableName = dbTbName.chat;
+			})
+		}	
+		// 禁言记录
+		if( !db.existsTable(dbTbName.blockChat) ){
+			db.exec("CREATE TABLE @tableName(
+				operator_type TEXT,
+				operator_nickname TEXT,
+				operator_uid TEXT,
+				blocker_nickname TEXT,
+				blocker_uid TEXT,
+				send_time INTEGER,
+				end_time INTEGER
+			)",{
+				tableName = dbTbName.blockChat;
+			})
+		}
+		for(k,v in retByTimeFunc){
+			var funcName = "get" ++ ..string.replace(k,"^\a", ..string.upper(k[[1]]) );
+			this[funcName] = function(uid, nickname, from, to){
+				var ret;
+				if( uid ){
+					ret = sql.getTable("SELECT * FROM " ++ dbTbName[k],{
+						uid = uid
+					})			
+				}
+				elseif(nickname){
+					ret = sql.getTable("SELECT * FROM " ++ dbTbName[k],{
+						nickname = nickname
+					})				
+				}
+				else {
+					ret = sql.getTable("SELECT * FROM " ++ dbTbName[k])			
+				}
+				return getRetByTime( ret, from, to ); 				
+			}
+		}
+						
+	};
+	insertChat = function(msg){
+		db.exec("INSERT INTO " ++ dbTbName.chat ++ " VALUES ( @uid, @nickname, @level, @txt, @send_time, @room_group, @platform_group )",{
+			uid = msg.uid;
+			nickname = msg.nickname;
+			txt = msg.txt;
+			send_time = msg.sendTime; 
+			level = msg.level;
+			room_group = msg.roomGroup;
+			platform_group = msg.platformGroup;
+		})			
+	}
+	insertBlockChat = function(msg){
+		db.exec("INSERT INTO " ++ dbTbName.blockChat ++ " VALUES( @operator_type, @operator_nickname, @operator_uid, @blocker_nickname, @blocker_uid, @send_time, @end_time )",{
+			operator_type = msg.operatorType;
+			operator_nickname = msg.operatorNickname;
+			operator_uid = msg.operatorUid;
+			blocker_nickname = msg.blockerNickname;
+			blocker_uid = msg.blockerUid;
+			send_time = msg.blockTime;
+			end_time = msg.endTime;
+		})
+			
+	}
+	// 进入房间时顺便更新用户信息
+	inserEnterRoom = function(msg){
+		db.exec("INSERT INTO " ++ dbTbName.enterRoom ++ " VALUES( @uid, @nickname, @level, @send_time, @room_group, @platform_group)",{
+			uid = msg.uid;
+			nickname = msg.nickname;
+			level = msg.level;
+			send_time = msg.enterTime;
+			room_group = msg.roomGroup;
+			platform_group = msg.platformGroup;					
+		})
+		this.updateUserInfo(
+			uid = msg.uid;
+			nickname = msg.nickname;
+			lastEnterLevel = msg.level;
+			lastEnterTime = msg.enterTime;
+			roomGroup = msg.roomGroup;
+			platformGroup = msg.platformGroup;
+		)	
+	}
+	insertGift = function(msg){
+		db.exec("INSERT INTO " ++ dbTbName.gift ++ " VALUES( @uid, @nickname, @level, @gift_name, @gift_id, @bonus_point, @count, @hit, @send_time,@room_group,@platform_group)",{
+			uid = msg.uid;
+			nickname = msg.nickname;
+			level = msg.level;
+			gift_name = msg.giftName;
+			gift_id = msg.giftId;
+			hit = msg.hit;
+			send_time = msg.sendTime; 
+			room_group = msg.roomGroup;
+			platform_group = msg.platformGroup;	
+			count = msg.count;	
+			bonus_point = msg.gx;			
+		})		
+	}
+	insertChouQin = function(msg){
+		db.exec("INSERT INTO " ++ dbTbName.chouQin ++ " VALUES( @uid, @nickname, @level, @chou_qin_level, @count, @hit, @send_time,@room_group,@platform_group)",{
+			uid = msg.uid;
+			nickname = msg.nickname;
+			level = msg.level;
+			chou_qin_level = msg.cqLevel;
+			hit = msg.hit;
+			send_time = msg.sendTime; 
+			room_group = msg.roomGroup;
+			platform_group = msg.platformGroup;	
+			count = msg.count;				
+		})			
+	}
+	getLastUserInfo = function(uid){
+		// 返回首行数据
+		var ret = db.stepQuery("SELECT * FROM " ++ dbTbName.userInfo, {
+			uid = uid;
+		})
+		if( !ret ){
+			return ; 
+		}
+		var lastUserInfo = {
+			uid = ret.uid;
+			nickname = ret.nickname;
+			lastEnterTime = ret.last_enter_time;
+			lastEnterLevel = ret.last_enter_level;
+			enterCount = ret.enter_count;			
+		}	
+		return lastUserInfo; 
+	}
+	updateUserInfo = function(msg){
+		var lastUserInfo = this.getLastUserInfo( msg.uid );
+		var enterCount;
+		if( lastUserInfo ){
+			enterCount = lastUserInfo.enterCount + 1;
+		}
+		else {
+			enterCount = 1;
+		}
+		
+		// REPLACE INTO 只用于没有默认值的列
+		db.exec("REPLACE INTO " ++ dbTbName.userInfo ++ " VALUES ( @uid, @nickname,@last_enter_time, @last_enter_level, @enter_count, @last_enter_room_group, @last_enter_platform_group )",{
+			uid = msg.uid;
+			nickname = msg.nickname;
+			last_enter_time = msg.lastEnterTime;
+			last_enter_level = msg.lastEnterLevel;
+			enter_count = enterCount;
+			last_enter_room_group = msg.roomGroup;
+			last_enter_platform_group = msg.platformGroup;				
+		})			
+	}
+	beginTrans = function(){
+		db.beginTrans();
+	}
+	commitTrans = function(){
+		db.commitTrans();
+	}
+			
+}
+namespace db{
+	timeFormat = "%Y年%m月%d日 %H时%M分%S秒";
+	// 数据库表名加入房间号前缀应对数据库文件名被改
+	baseTableName = {
+		userInfo = "user_info";// 用户信息
+		enterRoom = "enter_room";//	进房记录
+		gift = "gift";// 礼物
+		chat = "chat";// 弹幕
+		blockChat = "block_chat"; // 禁言记录
+		chouQin = "chou_qin";// 酬勤记录
+	} 
+	// 数据库名不要把数字放在前面，会报错
+	genTableName = function(roomId){
+		var r = {};	
+		for(k,v in baseTableName){
+			r[k] =  v  ++ "_" ++ roomId; 
+		}	
+		return r
+	}
+	retByTimeFunc = {
+		userInfo = 1;
+		enterRoom = 1;
+		gift = 1;
+		chat = 1;
+		chouQin = 1;
+	}
+	getRetByTime = function(ret, from, to){// 传入时间对象
+		if( !(from ? to) ){
+			return ret; 
+		}
+		
+		if( !to ){
+			to = tonumber(..time());
+		}
+		else {
+			to = tonumber(to);
+		}
+		
+		if( from ){
+			from = tonumber(from);
+		}
+		
+		var r = {};
+		for(i=1;#ret;1){
+			var t = ret[i].send_time;
+			if( !from ){
+				if( t <= to ){
+					..table.push( r, ret[i] )
+				}	
+			}
+			elseif( (t<=to) ? (t>=from) ){
+				..table.push( r, ret[i] )
+			}
+		}
+		return r; 		
+	}			
+}

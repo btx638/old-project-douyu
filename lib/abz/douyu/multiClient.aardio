@@ -1,0 +1,233 @@
+﻿namespace abz.douyu;
+class multiClient{
+	ctor(threadCount){
+		setThreadLoopFlag(threadCount,true);
+		var thHandle = loopMsg(threadCount);
+	};
+	addRoomId = function(roomId){
+		if( !thTableRoomIdMap[roomId] ){
+			thTableRoomIdArr.push(roomId);	
+		}
+		thTableRoomIdMap[roomId] = true;
+	}	
+	delRoomId = function(roomId){
+		thTableRoomIdMap[roomId] = null;		
+	}
+	waitClose = function(){
+		// 清空共享表
+		for( roomId,v in thTableRoomIdMap.each()){
+			thTableRoomIdMap[roomId] = null
+		}
+		setThreadLoopFlag(threadCount,false);
+		..thread.waitClose(thHandle)	
+	}	
+}
+namespace multiClient{
+	import thread.table;
+	
+	thTableRoomIdMap = thread.table("835EC494-F1CB-438C-941E-AD25D1D53F01");
+	thTableRoomIdArr = thread.table("8CC0CD33-E0E5-46CB-877C-31B597945AA9");
+	// 消息处理表 用于存储等操作
+	thTableMsg = thread.table("8B73E20C-4501-4B40-8A01-04FCD6EDAA32");
+	// 房间信息 roomId = {info} 不要包括礼物ID信息，因为直播中可能会更改分类
+	thTableRoomInfo = thread.table("46E85673-BC82-4332-8CCF-B92A1D072F94");
+	// 主播可能会在直播时更改分类，导致礼物变更，礼物表没有更新导致缺少ID，所以要建立一个礼物总表
+	thTableGift = thread.table("0D2721DF-09B9-43E1-91DB-8D3A2CD5619B");
+	// 线程循环开关标志
+	theadLoopFlag = "2B58DC27-DCE4-4E4A-B186-E835CE8BF029";
+	setThreadLoopFlag = function(threadCount,flag=true){
+		for(i=1;threadCount;1){
+			..thread.set( theadLoopFlag++tostring(i), flag)
+		}
+	}
+	
+	var threadFunc = function(param){
+		return	..thread.create( 
+			function(param){
+				import thread.command;
+				import abz.douyu.multiClient;
+				import abz.douyu.client;
+				import abz.douyu.helper;
+				import abz.douyu.msgType;
+				import abz.douyu.msg;
+				
+				var post = thread.command.post;
+				
+				var timeTick = time.tick;
+				var threadGet = thread.get; 
+				
+				var threadCount = param.threadCount;
+				var threadNo = param.threadNo;
+				
+				var dealMsg = abz.douyu.msg.deal;
+							
+			
+					
+				var thTableRoomIdMap = abz.douyu.multiClient.thTableRoomIdMap;
+				var thTableRoomIdArr = abz.douyu.multiClient.thTableRoomIdArr;
+				var thTableRoomInfo = abz.douyu.multiClient.thTableRoomInfo;
+				
+				var theadLoopFlag = abz.douyu.multiClient.theadLoopFlag ++ threadNo;
+				
+	
+				
+				var douyuClient = {};	
+				var createClient = function(roomId){
+					if( douyuClient[roomId] ){
+						douyuClient[roomId].quit();
+						douyuClient[roomId] = null;
+					}
+					var client = abz.douyu.helper(roomId);
+					if( client ){
+						douyuClient[roomId] = client;
+			
+					}
+					else {
+						thTableRoomIdArr.push(roomId);
+					}	
+				}			
+				var clearClient = function(){
+					for( roomId, client in douyuClient){
+						if( !thTableRoomIdMap[roomId] ){
+							client.quit();
+							douyuClient[roomId] = null;						
+						}
+					}	
+				}
+				var closeAllDouyuClient = function(){
+					for( roomId, client in douyuClient){
+						client.quit();
+						douyuClient[roomId] = null;	
+					}					
+				}	
+				var getTaskCount = function(){
+					return table.count(douyuClient); 
+				}										
+				var getTask = function(){
+					if( !thTableRoomIdMap.count() ){
+						return ; 
+					}
+					var count = math.ceil( thTableRoomIdMap.count()/threadCount );
+					if( getTaskCount() >= count ){
+						return ; 	
+					}
+					var task = { thTableRoomIdArr.pop(count) };
+					for(i=1;#task;1){
+						var roomId = task[i];
+						if( !douyuClient[roomId] ? thTableRoomIdMap[roomId] ){
+							createClient( roomId );
+						}
+					}			
+				}			
+				var peekMsg = function(){
+					for( roomId, client in douyuClient){
+						// 先处理完一个客户端, msgPack已经解析完成
+						var msgPack, err = client.recvMsg();
+						if( msgPack === false ){
+							post( "onReceiveSysMsg", roomId, err ++ "，正在重新连接..." );
+							createClient( roomId );	
+							continue ;					
+						}
+						var findErr;
+						for(i=1;#msgPack;1){
+							if( msgPack[i].type == "error" ){
+								findErr = true;
+							}
+							else {
+								// 只收集需要的类型
+								var msg = dealMsg(msgPack[i]);
+								if( msg ){
+									// 礼物
+									if( msgPack[i].type == "dgb" ){
+											post( "onReceiveMsg", {
+												roomId = roomId;
+												type = msgPack[i].type;
+												msg = msg;} 
+											)						
+									}								
+								}	
+							}	
+						}
+						if( findErr ){
+							post( "onReceiveSysMsg", roomId, "服务器出错" ++ "，正在重新连接..." );
+							createClient( roomId );								
+						}	
+					}					
+				}
+				var tick = timeTick();
+				var getTaskInterval = 10 * 1000;
+				var msgCount = 0;
+			
+				while( threadGet(theadLoopFlag) ){
+					getTask();
+					if( !getTaskCount() ){
+						sleep(200)
+						continue ;
+					}
+					if( (msgCount%5000)==0 ){
+						clearClient();
+					}
+					peekMsg();
+					msgCount++;
+				}
+				closeAllDouyuClient()				
+			},param
+		)	
+	} 
+	loopMsg = function( threadCount=1 ){
+		var h = {};
+		for(i=1;threadCount;1){
+			var handle, thId = threadFunc(threadNo=tostring(i);threadCount=threadCount)
+			..table.push( h, handle )
+		}
+		return h; 
+	}
+	test = function(){
+		import console;
+		import web.json;
+		..io.open()		
+		import abz.douyu.api;
+		//1分钟清屏1次
+		..thread.invoke( 
+			function(){
+				import console
+				var tick = 60 * 1000
+				while(true){
+					sleep(tick)
+					console.clearScreen ()
+				}	
+			}
+		)
+		// 挂机调试30分钟重新获取1次房间号
+		var tick = 30 * 60 * 1000;
+	//	var tick = 20 * 1000;
+		while(true){
+			var multiClient = abz.douyu.multiClient(8);
+			var room = abz.douyu.api.getRoom()
+			var room2 = abz.douyu.api.getRoom(,100,90)
+			var roomPack = ..table.concat( room, room2 )
+			if( !(room ? room2) ){sleep(5000);continue ;}
+			var roomIdPack = {};
+			for(i=1;#roomPack;1){
+				var roomId = roomPack[i].roomId;
+			//	roomId = "442280"
+				var roomInfo = abz.douyu.api.getRoomInfo( roomId )
+				if( roomInfo ){
+					self.thTableRoomInfo[roomId] = {
+						roomName = roomInfo.roomName;
+						ownerName = roomInfo.ownerName;
+					}
+					..table.push( roomIdPack, roomId )				
+				}
+			}
+			// 先取礼物表，后添加房间
+			self.thTableGift.giftInfo = abz.douyu.api.giftInfo;
+			for(i=1;#roomIdPack;1){
+				multiClient.addRoomId(roomIdPack[i])	
+			}		
+			sleep(tick)
+			multiClient.waitClose()
+			..io.print("关闭了~~~~~~~~~~~")
+		}
+	}	
+}

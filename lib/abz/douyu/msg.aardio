@@ -1,0 +1,149 @@
+﻿import abz.douyu.msgType;
+import abz.douyu.client;
+namespace abz.douyu.msg;
+
+var time = ..time;
+
+var parseMsg = ..abz.douyu.client.parseMsg;
+
+var rgData = ..abz.douyu.msgType.server.rg.data; /*房间职位*/
+var pgData = ..abz.douyu.msgType.server.pg.data; /*平台职位*/
+var nlData = ..abz.douyu.msgType.server.nl.data; /*贵族头衔*/
+var gtData = ..abz.douyu.msgType.server.gt.data; /*礼物头衔*/ 
+var blockOpData = ..abz.douyu.msgType.server.newblackres.data.otype.data;
+
+var needMsgType = {
+	chatmsg = 1;
+	uenter = 1;
+	dgb = 1;
+	bc_buy_deserve = 1;
+	newblackres = 1;
+	spbc = 1;
+	msgrepeaterlist = 1;/*斗鱼弹幕服务器列表*/
+	error = 1;
+	keeplive = 1;
+	loginres = 1;
+}
+
+deal = function(r){	
+//	r = parseMsg(r)
+	if !needMsgType[r.type] return ; 
+	
+	var roomGroup = rgData[r.rg];
+	var platformGroup = pgData[r.pg];	
+	var aristocratGroup = nlData[r.nl];	
+	var giftGroup = gtData[r.tg];
+	
+	var receiveTime = tonumber(time());
+		
+	var result; 
+	
+	select( r.type ) {
+		case "chatmsg" {
+			if( r.nn ? r.txt ){							
+				result = {
+					roomId = r.rid;
+					uid = r.uid;
+					nickname = r.nn;
+					txt = r.txt;
+					level = r.level;
+					sendTime = receiveTime;
+					roomGroup = roomGroup;
+					platformGroup = platformGroup;
+					aristocratGroup = aristocratGroup;
+					giftGroup = giftGroup;
+					color = r.col;
+				} 		
+			}
+		}							
+		case "uenter" {
+				result = {
+					roomId = r.rid;
+					uid = r.uid;
+					nickname = r.nn;
+					level = r.level;
+					enterTime = receiveTime;
+					roomGroup = roomGroup;
+					platformGroup = platformGroup;	
+					aristocratGroup = aristocratGroup;
+					giftGroup = giftGroup;										
+				} 									
+		}
+		case "ggbb" { // 用户在线领鱼丸
+		}
+		/**
+				price = thTableGift[r.gfid].price;
+				type = thTableGift[r.gfid].type;
+				gx = thTableGift[r.gfid].gx;
+				giftName = thTableGift[r.gfid].name;
+		**/
+		case "dgb" {
+			result = {
+				roomId = r.rid;
+				level = r.level;
+				uid = r.uid;
+				nickname = r.nn;
+				sendTime = receiveTime;
+				roomGroup = roomGroup;
+				platformGroup = platformGroup;	
+				aristocratGroup = aristocratGroup;
+				giftGroup = giftGroup;
+				giftId = r.gfid;
+				hit = r.hits;
+				count = r.gfcnt;
+			}												
+		}
+		case "newblackres" {
+			result = {
+				operatorType = blockOpData[r.otype];
+				operatorNickname = r.snic;
+				operatorUid = r.sid;
+				blockerNickname = r.dnic;
+				blockerUid = r.did;
+				blockTime = receiveTime;
+				endTime = tonumber(r.endtime);									
+			}
+		}
+		case "bc_buy_deserve" {
+			result = {
+				roomId = r.rid;
+				hit = r.hits;
+				count = r.cnt;
+				uid = r.sid:r.sui.id;
+				level = r.level;
+				nickname = r.sui.nick;
+				cqLevel = r.lev;
+				roomGroup = rgData[r.sui.rg]; 
+				platformGroup = pgData[r.sui.pg];
+				sendTime = receiveTime;										
+			}
+		}
+		case "spbc" {
+			result = {
+				roomId = r.rid;
+				giftId =  r.gfid;
+				giftName = r.gn;
+				roomId = r.drid;
+				ownerName = r.dn;
+				sender = r.sn;
+				senderUid = r.sid;
+			}
+		}
+		case "ranklist"{
+			
+		}
+		case "error"{
+			result = r
+		}
+		case "loginres"{
+			result = r
+		}		
+		case "keeplive"{
+			result = r
+		}				
+	}
+	if( result ){
+		result.type = r.type;
+	}
+	return result; 
+}

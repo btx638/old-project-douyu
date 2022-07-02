@@ -1,0 +1,108 @@
+﻿import abz.douyu.client;
+
+import thread.table;
+
+namespace abz.douyu;
+class helper{
+	ctor(roomId){
+		var client = ..abz.douyu.client();
+		
+		if !client.init(roomId) return null, "创建客户端失败"; 
+	
+		var thTableHandle = ..thread.table(..abz.douyu.client.tcpHandleGuid);
+		thTableHandle[roomId] = client.handle;
+		this.handle = client.handle;
+		this.thTableKeepLiveTick = ..thread.table( ..abz.douyu.client.guidKeepLive);	
+		
+		// 发送心跳
+		if( !..thread.get("{8E465F8E-1004-45FC-91F0-239B56DFD255}.keepLive") ){
+			keepLive()
+		}
+		var string = ..string;
+	};
+	recvMsg = function(){
+		// 收集1次消息
+		return client.recvMsg(); 
+	}
+	loopMsg = function(){
+		var fiberFunc = ..fiber.create( client.loopColMsg )
+		while( 
+		    var ok, msg;
+		    ok, msg = ..fiber.resume (fiberFunc, roomId); 
+		    ok ? msg
+		) {
+			var msgType = ..abz.douyu.client.getMsgType(msg);
+			select( msgType ) {
+				case "chatmsg" {
+					var r = ..abz.douyu.client.parseMsg(msg)
+				}
+				case "keeplive" {
+					var tick = this.thTableKeepLiveTick[roomId];
+					if( string.find(msg,"@" ++ tick) ){
+					}
+					else {
+	
+					}
+				}
+				case "error" {
+					thTableHandle[roomId] = null
+					return false; 
+				}
+			}	
+		}
+		thTableHandle[roomId] = null
+	}
+	quit = function(){
+		thTableHandle[roomId] = null
+		client.close();	
+	}
+}
+namespace helper{
+	keepLive = function(){
+		..thread.set("{8E465F8E-1004-45FC-91F0-239B56DFD255}.keepLive", true)
+		..thread.invoke( 
+			function(){
+				import thread.table;
+				
+				import abz.douyu.client;
+				var thTableHandle = ..thread.table(..abz.douyu.client.tcpHandleGuid);
+				var keepLiveTcpClient = {};
+				var createKeepLiveTcpClient = function(){
+					for( roomId,handle in thTableHandle.each() ){
+						// 当重新建立客户端时，句柄改变了，所以必须记录句柄并检查是否改变
+						if( !keepLiveTcpClient[roomId] or (keepLiveTcpClient[roomId].handle != handle) ){
+							var client = abz.douyu.client( handle );
+							if( client ){
+								keepLiveTcpClient[roomId] = client;
+							}
+						}
+					}					
+				}
+				var sendData = function(){
+					for( roomId, client in keepLiveTcpClient){
+						// 清除
+						if( !thTableHandle[roomId] ){
+							client.close();
+							keepLiveTcpClient[roomId] = null;
+							continue ;
+						}
+						// 心跳
+						client.keepLive(roomId)
+					}					
+				}
+				do{
+					createKeepLiveTcpClient();
+					sendData();
+				}while( sleep(15000) )
+			}
+		)	
+	}
+}
+
+
+/**
+..io.open();
+var helper = helper( "6324" );
+helper.loopMsg()
+execute("pause")
+**/

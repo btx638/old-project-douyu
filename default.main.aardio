@@ -1,0 +1,256 @@
+import win.ui;
+/*DSG{{*/
+mainForm = win.form(text="斗鱼直播弹幕助手";right=943;bottom=633)
+mainForm.add(
+btnAddRoom={cls="button";text="添加房间";left=618;top=8;right=699;bottom=42;dl=1;dt=1;z=1};
+btnDelRoom={cls="button";text="删除房间";left=277;top=8;right=376;bottom=42;dl=1;dt=1;z=7};
+btnOpenRoom={cls="button";text="打开房间";left=388;top=8;right=469;bottom=42;dl=1;dt=1;z=8};
+cbbRoom={cls="combobox";left=86;top=10;right=270;bottom=36;dl=1;dt=1;edge=1;items={};mode="dropdownlist";vscroll=1;z=5};
+custom={cls="custom";text="custom";left=3;top=46;right=943;bottom=517;ah=1;autosize=1;center=1;edge=1;transparent=1;z=3};
+edRoom={cls="edit";left=484;top=10;right=608;bottom=37;dl=1;dt=1;edge=1;z=2};
+lsbLog={cls="listbox";left=3;top=520;right=943;bottom=611;ah=1;bgcolor=16777215;edge=1;items={};vscroll=1;z=4};
+static={cls="static";text="选择房间：";left=12;top=16;right=79;bottom=34;dl=1;dt=1;transparent=1;z=6}
+)
+/*}}*/
+
+io.open()
+
+
+
+
+var softInfo = ""
+var softName = "";
+
+import win.ui.statusbar;
+var statusbar = win.ui.statusbar(mainForm)
+statusbar.setText(softInfo)
+
+
+var sysLog = function(str){  
+	var log = tostring(time(, "%Y-%m-%d %H:%M:%S" )) ++ " " ++ str;
+	mainForm.lsbLog.add(log)
+	mainForm.lsbLog.selIndex = mainForm.lsbLog.count;
+}
+import client;
+import abz.douyu.api;
+var roomIdMap = {};
+// 索引与cbb一致
+var roomIdArr = {};
+var form = {};
+
+var douyuClient = client()
+
+client.callback.onReceiveMsg = function(r){
+	var roomId = r.roomId;
+	if( form[roomId] ){
+		form[roomId].interface[r.type](r.msg)
+	}
+}
+
+import thread.table;
+var thTableTaskRoomId = thread.table("9928CCFD-7C8E-4427-B395-DDEDA1EFF93F");
+..thread.invoke( 
+	function(){
+		import win;
+		import thread.table;
+		import thread.command;
+		
+		import abz.douyu.api;
+		
+		var thTableTaskRoomId = thread.table("9928CCFD-7C8E-4427-B395-DDEDA1EFF93F");	
+		
+			
+		while( win.delay(2000) ){
+			if( !thTableTaskRoomId.count() ){
+				sleep(2000)
+				continue ;
+			}
+			for( k, roomId in thTableTaskRoomId.each() ){
+				 var roomInfo = abz.douyu.api.getRoomInfo(roomId);
+				 if( roomInfo ){
+				 	thread.command.post( "onReceiveRoomInfo", {
+				 		roomId = roomId;
+				 		roomInfo = roomInfo; 
+				 		time = tonumber(time());	
+				 	} )
+				 }
+			}		
+		}
+	}
+)
+
+import thread.command;
+var threadCommand = thread.command()
+threadCommand.onReceiveRoomInfo = function(msg){
+	if( form[msg.roomId] ){
+		form[msg.roomId].interface.onReceiveRoomInfo(msg)
+	}	
+}
+
+var beforeSelIndex;
+var selRoom = function(){
+	var selIndex = mainForm.cbbRoom.selIndex;
+	if( selIndex ){
+		mainForm.custom.showChildren(false);
+		var roomId = roomIdArr[selIndex]
+		form[roomId].show(true); 
+		 beforeSelIndex = selIndex
+	}	
+}
+
+
+// 删除房间
+mainForm.btnDelRoom.oncommand = function(id,event){	
+	// 取出房间ID
+	var selIndex = mainForm.cbbRoom.selIndex;
+	if( !selIndex ){
+		return ; 
+	}
+	
+	var ownerName = mainForm.cbbRoom.selText;
+	owner.disabled = true
+	mainForm.btnAddRoom.disabled = true  
+	mainForm.cbbRoom.delete()
+	var roomId = table.remove( roomIdArr, selIndex );
+	// 关闭房间窗口
+	if( form[roomId] ){
+		// 停止线程
+		sysLog( "主播 " ++ ownerName ++ " 正在被删除"  )	
+		douyuClient.delRoomId(roomId);
+		form[roomId].close();
+		form[roomId] = null;
+		roomIdMap[roomId] = null;
+		sysLog( "主播 " ++ ownerName ++ " 已从列表删除"  )	
+		mainForm.cbbRoom.selIndex = mainForm.cbbRoom.count;
+		selRoom()
+	}
+	owner.disabled = false
+	mainForm.btnAddRoom.disabled = false
+	// 选择最后的添加
+	
+}
+
+
+
+var addRoomId = function(room){
+
+	var roomInfo, err = abz.douyu.api.getRoomInfo( room )	
+	
+	if( !roomInfo ){
+		mainForm.msgboxErr(err:"网络连接失败，请重试！","提示")
+		return ;	
+	}
+	var roomId = roomInfo.roomId;
+	var roomName = roomInfo.roomName;
+	var ownerName = roomInfo.ownerName;
+	if( roomIdMap[roomId] ){
+		mainForm.msgboxErr("该房间已添加","提示")
+		return ; 
+	}
+	douyuClient.addRoomId( roomId );
+	roomIdMap[roomId] = true;
+	form[roomId] = mainForm.custom.loadForm("\res\frmRoomInfo.aau")
+	
+	mainForm.cbbRoom.add( ownerName )
+	table.push( roomIdArr, roomId )
+
+	mainForm.cbbRoom.selIndex = mainForm.cbbRoom.count;
+	beforeSelIndex = mainForm.cbbRoom.selIndex;
+	// 加入定时更新消息线程
+	thTableTaskRoomId.push( roomId );	
+}
+
+mainForm.btnAddRoom.oncommand = function(id,event){
+	owner.disabled = true
+	addRoomId( mainForm.edRoom.text );
+	owner.disabled = false
+}
+
+import process;
+mainForm.btnOpenRoom.oncommand = function(id,event){
+	var selIndex = mainForm.cbbRoom.selIndex;
+	if( selIndex ){
+		var roomId = roomIdArr[selIndex]
+		process.execute( "http://www.douyu.com/" ++ roomId )
+	}
+}
+
+mainForm.cbbRoom.oncommand = function(id,event){
+	if( event == 0x1/*_CBN_SELCHANGE*/ ){
+		selRoom()
+	}
+}
+import web.json;
+var setting = {
+	error = 0;
+	data = {};
+};
+
+var onClose = function(){
+    // 保存观看列表到json
+    if( #roomIdArr ){
+    	setting.data.roomIdList = roomIdArr;
+    	var s = web.json.stringify( setting, true );
+    	string.save("\setting.ini", s)
+    }	
+}
+
+var onShow = function(){
+	var s = string.load( "\setting.ini" );
+	if( #s ){
+		var ok,  t = call( web.json.parse,,s );
+		if( ok ? type(t)==type.table ? t.error==0 ){
+			sysLog("正在添加上次的观看列表，请稍候")
+			for(i=1;#t.data.roomIdList;1){
+				addRoomId( t.data.roomIdList[i] )
+			}
+			sysLog("添加上次的观看列表完成")
+		}	
+	}
+}
+
+mainForm.onClose = function(hwnd,message,wParam,lParam){
+	onClose();
+}
+
+mainForm.show() 
+
+sysLog("正在采集礼物信息，请稍候")
+mainForm.btnAddRoom.disabled = true
+mainForm.btnDelRoom.disabled = true
+mainForm.cbbRoom.disabled = true
+do{
+	var ok = win.invoke(
+		function(){
+			import client;
+			return client.initGift()
+		}
+	)	
+}while( ok )
+mainForm.btnAddRoom.disabled = false
+mainForm.btnDelRoom.disabled = false
+mainForm.cbbRoom.disabled = false
+sysLog("采集礼物信息成功！现在可以添加房间了")
+onShow()
+
+// 接受测试房间
+
+/*
+import process.command
+process.command.join( "311DD149-DC88-4BA2-8541-7547A35F108E" )
+var processCommand = process.command()
+var notGetTop20;
+processCommand.updateTop20 = function(r){
+	if( !notGetTop20 ){
+		for(i=1;#r;1){
+			if( !roomIdMap[r[i].roomId] ){
+				addRoomId(r[i].roomId)
+			}
+		}
+		notGetTop20 = true;
+	}
+}
+*/
+
+
+return win.loopMessage(); 

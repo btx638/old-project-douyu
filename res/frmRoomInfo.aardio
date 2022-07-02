@@ -1,0 +1,217 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="aardio form";right=941;bottom=477;parent=...)
+winform.add(
+lsvBigGift={cls="listview";left=474;top=230;right=922;bottom=372;ah=1;edge=1;fullRow=1;gridLines=1;vscroll=1;z=5};
+lsvBlock={cls="listview";left=4;top=376;right=927;bottom=471;ah=1;edge=1;fullRow=1;gridLines=1;vscroll=1;z=2};
+lsvChat={cls="listview";left=4;top=62;right=591;bottom=225;ah=1;edge=1;fullRow=1;gridLines=1;vscroll=1;z=1};
+lsvEnterRoom={cls="listview";left=593;top=62;right=924;bottom=225;ah=1;edge=1;fullRow=1;gridLines=1;vscroll=1;z=4};
+lsvGift={cls="listview";left=4;top=230;right=469;bottom=372;ah=1;edge=1;fullRow=1;gridLines=1;vscroll=1;z=3};
+lsvRoomInfo={cls="listview";left=4;top=6;right=920;bottom=58;ah=1;edge=1;z=6}
+)
+/*}}*/
+
+winform.lsvRoomInfo.insertColumn("当前状态",60);
+winform.lsvRoomInfo.insertColumn("房间号",60);
+winform.lsvRoomInfo.insertColumn("主播名称",150);
+winform.lsvRoomInfo.insertColumn("房间名称",220);
+winform.lsvRoomInfo.insertColumn("人气",70);
+winform.lsvRoomInfo.insertColumn("体重",80);
+winform.lsvRoomInfo.insertColumn("关注人数",70);
+winform.lsvRoomInfo.insertColumn("观看时长",60);
+winform.lsvRoomInfo.insertColumn("鱼丸收入",70);
+winform.lsvRoomInfo.insertColumn("鱼翅收入",70);
+
+winform.lsvRoomInfo.addItem("")
+
+
+winform.lsvChat.insertColumn( "级别", 40 )
+winform.lsvChat.insertColumn( "发言昵称", 150 )
+winform.lsvChat.insertColumn( "内容", 270 )
+winform.lsvChat.insertColumn( "房间身份", 60 )
+winform.lsvChat.insertColumn( "超管", 40 )
+
+winform.lsvBlock.insertColumn( "封禁昵称", 150 );
+winform.lsvBlock.insertColumn( "封禁时长", 150 );
+winform.lsvBlock.insertColumn( "封禁开始时间", 130 );
+winform.lsvBlock.insertColumn( "封禁到期时间", 130 );
+winform.lsvBlock.insertColumn( "操作者昵称", 150 );
+winform.lsvBlock.insertColumn( "操作者身份", 80 );
+
+winform.lsvGift.insertColumn( "礼物名称", 60 )
+winform.lsvGift.insertColumn( "连击数", 70 )
+
+winform.lsvGift.insertColumn( "赠送者昵称", 150 )
+winform.lsvGift.insertColumn( "赠送者等级", 80 )
+winform.lsvGift.insertColumn( "房管", 40 )
+winform.lsvGift.insertColumn( "超管", 40 )
+
+winform.lsvBigGift.insertColumn( "礼物名称", 60 )
+winform.lsvBigGift.insertColumn( "连击数", 70 )
+winform.lsvBigGift.insertColumn( "赠送者昵称", 150 )
+winform.lsvBigGift.insertColumn( "赠送者等级", 80 )
+winform.lsvBigGift.insertColumn( "房管", 40 )
+winform.lsvBigGift.insertColumn( "超管", 40 )
+
+winform.lsvEnterRoom.insertColumn( "级别", 40 )
+winform.lsvEnterRoom.insertColumn( "进房昵称", 150 )
+winform.lsvEnterRoom.insertColumn( "房间身份", 60 )
+winform.lsvEnterRoom.insertColumn( "超管", 40 )
+
+var timeFormat = "%Y-%m-%d %H:%M:%S";
+var getTimeString = function(num){
+	var t = time(num, timeFormat )
+	return tostring(t); 
+}
+
+var updataGift = function(msg){
+	var index = winform.lsvGift.addItem({
+		msg.giftName;
+		msg.hit:"";
+		msg.nickname;
+		msg.level;
+		msg.roomGroup?"是":"";
+		msg.platformGroup?"是":"";
+	})
+	winform.lsvGift.ensureVisible(index)		
+}
+var updataBigGift = function(msg){
+	var index = winform.lsvBigGift.addItem({
+		msg.giftName;
+		msg.hit:"";
+		msg.nickname;
+		msg.level;
+		msg.roomGroup?"是":"";
+		msg.platformGroup?"是":"";
+	})
+	winform.lsvBigGift.ensureVisible(index)				
+}
+var yuWanCount = 0;
+var yuChiCount = 0;
+var updateGet = function(msg){
+	if( msg.type == "鱼丸" ){
+		yuWanCount += msg.price;
+	}
+	elseif( msg.type == "鱼翅" ){
+		yuChiCount += msg.price;
+	}
+	elseif( msg.type == "酬勤"  ){
+		var cqLevel = msg.cqLevel;
+		if( cqLevel == "1" ){
+			yuChiCount += 15;
+		}
+		elseif( cqLevel == "2" ){
+			yuChiCount += 30;
+		}
+		elseif( cqLevel == "3" ){
+			yuChiCount += 50;
+		}		
+	}
+	
+	winform.lsvRoomInfo.setItemText( tostring(yuWanCount),1, 9)
+	winform.lsvRoomInfo.setItemText( tostring(yuChiCount),1, 10)
+}
+// 刷新观看时间
+var viewLong = 0;
+var tmId = winform.addtimer( 
+	60000,
+	function(hwnd,msg,id,tick){
+		viewLong++;
+		winform.lsvRoomInfo.setItemText( tostring(viewLong)++"分钟",1,8 )
+	} 
+)
+winform.interface = {
+	onReceiveRoomInfo = function(msg){
+		winform.lsvRoomInfo.setItemText( msg.roomInfo.roomStatus,1,1 )
+		winform.lsvRoomInfo.setItemText( msg.roomId,1,2 )
+		winform.lsvRoomInfo.setItemText( msg.roomInfo.ownerName,1,3 )
+		winform.lsvRoomInfo.setItemText( msg.roomInfo.roomName,1,4 )
+		winform.lsvRoomInfo.setItemText( msg.roomInfo.onlineNum,1,5 )
+		winform.lsvRoomInfo.setItemText( msg.roomInfo.ownerWeight,1,6 )
+		winform.lsvRoomInfo.setItemText( msg.roomInfo.fansNum,1,7 )
+		
+	}
+	chatmsg = function(msg){
+		var index = winform.lsvChat.addItem({
+			msg.level;
+			msg.nickname;
+			msg.txt;
+			msg.roomGroup:"";
+			msg.platformGroup?"是":"";			
+		})
+		winform.lsvChat.ensureVisible(index)
+	}
+	uenter = function(msg){
+		var index = winform.lsvEnterRoom.addItem({
+			msg.level;
+			msg.nickname;
+			msg.roomGroup:"";
+			msg.platformGroup?"是":"";
+		})
+		winform.lsvEnterRoom.ensureVisible(index)			
+	}		
+	dgb = function(msg){
+		updataGift(msg)
+		if( msg.gx >= 6 ){
+			updataBigGift(msg)
+		}
+		updateGet(msg);		
+	}	
+	bc_buy_deserve = function(msg){
+		var cqLevel = msg.cqLevel;
+		msg.giftName = cqLevel ++ "级" ++ "酬勤";
+		updataGift(msg)	
+		updataBigGift(msg)
+		msg.type = "酬勤";
+		updateGet(msg)		
+	}
+	newblackres = function(msg){
+		var blockTime = msg.blockTime
+		var endTime = msg.endTime
+		
+		var blockTimeObj = time(blockTime)
+		var endTimeObj = time( endTime )
+		
+		var minute = endTimeObj.diffminute(blockTimeObj)
+		var hour = endTimeObj.diffhour(blockTimeObj)
+		var day = endTimeObj.diffday(blockTimeObj)
+		var month = endTimeObj.diffmonth(blockTimeObj)
+		
+		
+		var base = "";
+		if( month ){
+			base ++= tostring(month) ++ "个月";
+		}				
+		if( day ){
+			var days = day % 30;
+			if( days ){
+				base ++= tostring(days) ++ "天";
+			}	
+		}
+		if( hour ){
+			var hours = hour % 24;
+			if( hours ){
+				base ++= tostring(hours) ++ "小时";
+			}
+		} 
+		if( minute ){
+			var minutes = minute % 60;
+			if( minutes ){
+				base ++= tostring(minutes) ++ "分钟";
+			}
+		} 							
+		var index = winform.lsvBlock.addItem({
+			msg.blockerNickname;
+			base;
+			getTimeString(blockTime);
+			getTimeString(endTime);
+			msg.operatorNickname;
+			msg.operatorType;
+		})
+		winform.lsvBlock.ensureVisible(index)			
+	}				
+}
+
+winform.show();
+win.loopMessage();
+return winform;

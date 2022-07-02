@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<project ver="10" name="斗鱼弹幕助手" libEmbed="true" icon="..." ui="win" output="aardio工程15.exe" CompanyName="雷电软件中心出品" FileDescription="斗鱼弹幕助手" LegalCopyright="雷电软件中心出品" ProductName="斗鱼弹幕助手" InternalName="斗鱼弹幕助手" FileVersion="0.0.0.06" ProductVersion="0.0.0.06" publishDir="/Publish/" dstrip="false" local="false" ignored="false">
+	<folder name="资源文件" path="res" embed="true" local="false" ignored="false">
+		<file name="frmRoomInfo.aardio" path="res\frmRoomInfo.aardio" comment="res\frmRoomInfo.aardio"/>
+	</folder>
+	<file name="default.main.aardio" path="default.main.aardio" comment="default.main.aardio"/>
+</project>

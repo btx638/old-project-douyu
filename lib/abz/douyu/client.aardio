@@ -1,0 +1,55 @@
+﻿namespace abz.douyu.client;
+
+var string = ..string;
+var table = ..table;
+// 解析消息返回table		
+parseMsg = function(msg,tab ){	
+	tab := {};
+	// 先分割键值对
+	var t = string.split( msg, "/" );
+	for(i=1;#t;1){
+		// 取出一个键值对
+		var s = t[i];
+		// /出现在字符串结尾会出现空串
+		if( !#s ) continue ;		
+		var r = string.split( s, "<@=>" )
+		if( #r = 2 ){
+			var key = r[1];
+			var value = r[2];
+			if( string.find(value, "<\@A>|<\@S>") ){
+				value = string.replace( value,"<\@A>|<\@S>", {["@S"] = "/";["@A"] = "@"} )
+				// 根据弹幕规定做出处理
+				select( key ) {
+					case "txt"/*弹幕内容*/ {
+						tab[key] = value
+					}
+					else {
+						tab[key] = {}
+						parseMsg( value, tab[key] )							
+					}
+				}
+			}
+			else {
+				tab[key] = value
+			}				
+		}
+		elseif( #r == 1 ){
+			//el@=
+			if( string.endWith(s,"@=") ){
+				continue ;
+			}
+			if( string.find(s, "<\@A>|<\@S>") ){
+				s = string.replace( s,"<\@A>|<\@S>", {["@S"] = "/";["@A"] = "@"} )
+				table.push( tab, {} )
+
+				parseMsg(s,tab[#tab])
+			}
+			else {	
+				table.push( tab, s )	
+			}			
+		}
+	}
+	return tab; 
+}
+
+

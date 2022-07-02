@@ -1,0 +1,284 @@
+
+class client{
+	ctor(){
+		var task = {};
+		..table.gc( this, "close")
+		
+/*
+		if( !updateDbOpen ){
+			updateDb()
+			updateDbOpen = true;
+		}
+*/
+	}
+	addRoomId = function(roomId){
+		if( task[roomId] ) return ; 
+		..thread.set(guidTheadLoopFlag ++ roomId, true)
+		var handle , threadId = dealMsg(roomId);
+		if( handle ){
+			task[roomId] = handle;
+			return true; 
+		}
+	}
+	delRoomId = function(roomId){
+		if( task[roomId] ){
+			..thread.set(guidTheadLoopFlag ++ roomId, false)
+			..thread.waitOne(task[roomId]);
+			..raw.closehandle(task[roomId]) 
+			task[roomId] = null;
+			return true; 
+		}
+	}
+	close = function(){
+		for(k,v in task){
+			this.delRoomId(k)
+		}
+	}	
+}
+namespace client{
+	import thread.table;
+	import thread.command;
+	import abz.douyu.api;
+	
+	// 礼物总表	
+	thTableGift = thread.table("34B6DF58-8C58-4864-99EE-5975366D936D");
+	// 消息总表
+	thTableMsg = thread.table("33B116D5-F344-4783-A9DB-273AEE27E4B4");
+	// 需要插入数据库的消息总表
+	thTableDbMsg = thread.table("310EB0E6-73A5-4E0C-B734-47C1BD5FF8CF");
+	// 线程循环标志
+	guidTheadLoopFlag = "052C181D-68C9-45F0-9479-FD5AE7AC24FF";
+	
+	callback = thread.command()
+
+	// 先获取礼物表
+	initGift = function(){
+		var room = abz.douyu.api.getRoom()
+		if( !room ) return ; 
+		// 根据roomId获取房间信息时，顺便获取礼物信息
+		for(i=1;#room;1){
+			var roomInfo = abz.douyu.api.getRoomInfo( room[i].roomId )
+			if( roomInfo ){
+				for(i=1;#roomInfo.giftList;1){
+					var giftId = roomInfo.giftList[i].giftId
+					thTableGift[giftId] = roomInfo.giftList[i]
+				}
+			}
+		}
+		return true; 			
+	}
+	// 独立线程更新数据库
+	updateDb = function(){
+		 ..thread.invoke( 
+			function(){
+				import client	
+				import db;
+				
+				var thTableDbMsg = client.thTableDbMsg;	
+				var dbClient = {};
+			
+				var dbBeginTrans = function(){
+					for( roomId, client in dbClient){
+						client.beginTrans()
+					}
+				}
+				var dbCommitTrans = function(){
+					for( roomId, client in dbClient){
+						client.commitTrans()
+					}					
+				}				
+				var update = function(r){
+					var roomId = r.roomId;
+					var msg = r.msg;
+					// 写入数据库
+					select(r.type) {
+						case "chatmsg" {
+							dbClient[roomId].insertChat(r.msg);
+						}
+						case "uenter" {
+							dbClient[roomId].inserEnterRoomd(r.msg);
+						}
+						case "dgb" {
+							dbClient[roomId].insertGift(r.msg);
+						}
+						case "bc_buy_deserve" {
+							dbClient[roomId].insertChouQin(r.msg);
+						}						
+						case "newblackres" {
+							dbClient[roomId].insertBlockChat(r.msg);
+						}
+					}					
+				}
+				var doTask = function(task){
+					// 建表
+					var roomId = task.roomId
+					if( !dbClient[roomId] ){
+						dbClient[roomId] = db( roomId );
+					}					
+					
+					// 开事物
+					dbBeginTrans()
+					// 写入数据库
+					update(task)
+					dbCommitTrans();			
+				}
+				do{
+					if( !thTableDbMsg.count() ){
+						sleep(200)
+						continue ;
+					}
+					var r = thTableDbMsg.remove();	
+					if( r ){
+						doTask(r);
+					}
+				}while(true)								
+			}
+		)
+	}  
+	
+	dealMsg = function(roomId){
+		return ..thread.create( 
+			function(roomId){
+				import abz.douyu.helper;
+				import abz.douyu.msgType;
+				import thread.command;
+				
+				import client;
+					
+				var thTableGift = client.thTableGift;
+				var thTableMsg = client.thTableMsg;
+				
+				// 循环获取消息的线程共享变量，条件变量
+				var theadLoopFlag = client.guidTheadLoopFlag ++ roomId;
+				
+				// 斗鱼房间对象
+				var douyu = abz.douyu.helper(roomId);	
+				// 重新建立对象
+				var createObj = function(roomId){
+					// 先退出并清理已存在的对象
+					if( douyu ){
+						douyu.quit();
+					}
+					douyu = abz.douyu.helper(roomId);
+					// 建立成功
+					if( douyu ){
+				//		..io.print("ok",roomId)
+					}
+				}
+				// 提取需要的消息
+				var getNeedMsg = function(msg, roomId){	
+					var r = msg;		
+					var result; 	
+					var roomGroup = abz.douyu.msgType.server.rg.data[r.rg];
+					var platformGroup = abz.douyu.msgType.server.pg.data[r.pg];			
+					select( r.type ) {
+						case "chatmsg" {
+							if( r.nn ? r.txt ){	
+								result = {
+									uid = r.uid;
+									nickname = r.nn;
+									txt = r.txt;
+									level = r.level;
+									sendTime = tonumber(time());
+									roomGroup = roomGroup;
+									platformGroup = platformGroup;
+								} 		
+							}
+						}							
+						case "uenter" {
+								result = {
+									uid = r.uid;
+									nickname = r.nn;
+									level = r.level;
+									enterTime = tonumber(time());
+									roomGroup = roomGroup;
+									platformGroup = platformGroup;											
+								} 									
+						}
+						case "ggbb" { // 用户在线领鱼丸
+						}
+						case "dgb" {
+							result = {
+								level = r.level;
+								uid = r.uid;
+								nickname = r.nn;
+								sendTime = tonumber(time());
+								roomGroup = roomGroup;
+								platformGroup = platformGroup;	
+								giftId = r.gfid;
+								price = thTableGift[r.gfid].price;
+								type = thTableGift[r.gfid].type;
+								gx = thTableGift[r.gfid].gx;
+								giftName = thTableGift[r.gfid].name;
+								hit = r.hits;
+								count = r.gfcnt;
+							}												
+						}
+						case "newblackres" {
+							result = {
+								operatorType = abz.douyu.msgType.server.newblackres.data.otype.data[r.otype];
+								operatorNickname = r.snic;
+								operatorUid = r.sid;
+								blockerNickname = r.dnic;
+								blockerUid = r.did;
+								blockTime = tonumber(time());
+								endTime = tonumber(r.endtime);									
+							}
+						}
+						case "bc_buy_deserve" {
+							result = {
+								hit = r.hits;
+								count = r.cnt;
+								uid = r.sid:r.sui.id;
+								level = r.level;
+								nickname = r.sui.nick;
+								cqLevel = r.lev;
+								roomGroup = abz.douyu.msgType.server.rg.data[r.sui.rg]; 
+								platformGroup = abz.douyu.msgType.server.pg.data[r.sui.pg];
+								sendTime = tonumber(time());										
+							}
+						}
+						case "spbc" {
+							var result = {
+								giftId =  r.gfid;
+								giftName = r.gn;
+								roomId = r.drid;
+							}
+						}
+						case "error" {
+							createObj( roomId );
+						}
+					}
+					if( result ){
+						return {
+							roomId=roomId;
+							type=r.type;
+							msg=result;
+						}
+					}						
+				}
+				
+				// 处理消息
+				var parseMsg = function(){
+					// 取出1条消息
+					var msg, err = douyu.getOneMsg();
+					// 服务器断开连接
+					if( msg === false ){
+						createObj( roomId );
+					}
+					if( msg ){
+						return getNeedMsg( msg, roomId )				
+					}					
+				}
+				var thread = ..thread;	
+				while( thread.get(theadLoopFlag) ){
+					var msg = parseMsg();
+					if( msg ){
+						thread.command.post( "onReceiveMsg", msg )
+					}
+				}
+				douyu.quit()		
+			},roomId
+		)	
+	}		
+}

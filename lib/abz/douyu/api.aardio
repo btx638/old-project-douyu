@@ -1,0 +1,200 @@
+﻿import inet.whttp;
+import web.json;
+namespace abz.douyu.api;
+
+var whttp = ..inet.whttp()
+whttp.addHeaders =/**
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Accept-Language: zh-CN,zh;q=0.9,ja;q=0.8,zh-TW;q=0.7
+Accept-Encoding: gzip, deflate
+**/ 
+whttp.setTimeouts( 2000, 2000, 1000 )
+
+
+getData = function(html){
+	var ok, r = call( ..web.json.parse,,html );
+	if( ok ? type(r) == type.table ){
+		if( r.data ){
+			if( r.error == 0 ){
+				return r.data; 
+			}
+			else {
+				return false, r.data; 
+			}			
+		}
+		else {
+			return false, "该房间可能不存在"; 
+		}
+			
+	}		
+}
+getRoom = function(cateId,offset=0, limit=99){	
+	var baseUrl = "http://open.douyucdn.cn/api/RoomApi/live";
+	if( cateId ){
+		baseUrl ++= "/" ++ cateId;
+	}
+	
+	var room = {};
+	var html,,code = whttp.get( ..string.format("%s?offset=%s&limit=%s", baseUrl,offset,limit ) ) ..io.print(html)
+	if( !html ){
+		return null, err,code;  
+	} 
+	var data, err = getData(html);
+	if( !data ){
+		return false, err,code; 
+	}
+		
+	for(i=1;#data;1){
+		var data = data[i];
+		..table.push( room, {
+			roomId = data.room_id;
+			roomName = data.room_name;
+			roomSrc =data.room_src;  
+			hot = data.hn;
+			ownerUid = data.owner_uid;
+			ownerName = data.nickname;
+			url = data.url;
+		} )
+	}	
+	return room; 	
+}
+
+getRoomInfo = function(roomId){	
+	var html = whttp.get( "http://open.douyucdn.cn/api/RoomApi/room/" ++ roomId )
+	if( !html ){
+		return null, "网络连接有误"; 
+	}
+
+	var data, err = getData(html);
+	if( !data ){
+		return false, err; 
+	}	
+
+	var giftList = {};
+	var giftMap = {};
+	for(i=1;#data.gift;1){
+		var gift = data.gift[i];
+		var giftInfo = {
+			giftId = gift.id;
+			gx = gift.gx;
+			pngImgUrl = gift.mimg;
+			gifImgUrl = gift.himg;
+			name = gift.name;
+			info = gift.intro;
+			specInfo = !!#gift.desc ? gift.desc;
+			type = ({["1"]="鱼丸";["2"]="鱼翅"})[gift.type];
+			price = gift.pc;// number
+			priceValue = ({["1"]="鱼丸";["2"]="元"})[gift.type];
+		}
+		..table.push( giftList, giftInfo);
+		giftMap[gift.id] = giftInfo;
+	}
+
+	return {
+		roomId = data.room_id;
+		lastStartTime = data.start_time;
+		ownerName = data.owner_name;
+		ownerWeight = data.owner_weight;
+		roomName =  data.room_name;
+		roomStatus = ({["1"]="开播";["2"]="关播"})[data.room_status];
+		onlineNum = data.online; /*在线人数*/
+		avatarUrl = data.avatar;
+		fansNum = data.fans_num;
+		giftList = giftList;
+		giftMap = giftMap;
+	}	
+}
+getCate = function(){
+	var html = whttp.get("http://open.douyucdn.cn/api/RoomApi/game");
+	if( !html ){
+		return ; 
+	}
+	var data = getData(html);
+	if( !data ){
+		return false, err; 
+	}		
+	var r = {};
+	for(i=1;#data;1){
+		var d = data[i];
+		..table.push( r, {
+			cateId = d.cate_id;
+			cateName = d.game_name;
+			shortName = d.short_name;
+			cateUrl = d.game_url;
+			catePictureJpgImgUrl = d.game_src;
+			cateIconJpgImgUrl = d.game_icon;
+		})
+	}
+	return r; 	
+}
+getAvatar = function(uid){
+	var url = ..string.format("https://www.douyu.com/lapi/member/avatar/getAvatar?uid=%s&size=middle",uid);
+	var html = whttp.get( url );
+	if( html ? ..string.find(html,"@jpg") ){
+		var imgUrl = "https://apic.douyucdn.cn/upload/" ++ html;
+		return whttp.get( imgUrl );
+	}
+}
+getAvatarUrl = function(uid){
+	var url = ..string.format("https://www.douyu.com/lapi/member/avatar/getAvatar?uid=%s&size=middle",uid);
+	var html = whttp.get( url );
+	if( html ? ..string.find(html,"@jpg") ){
+		var imgUrl = "https://apic.douyucdn.cn/upload/" ++ html;
+		return imgUrl;
+	}
+}
+getViewUrl = function(roomId){
+	var html = whttp.get( "http://m.douyu.com/html5/live?roomId=" ++ roomId );
+	if( !html ) return null, "网络连接出错"; 
+	var ok, r = call( ..web.json.parse,, html )
+	if( !(ok ? type(r)==type.table) ) return null, "网络连接出错"; 
+	if( r.error !== 0 ) return null, "其他错误"; 
+	if( r.data.show_status !== "1" ) return false, "关播";
+	if( r.data.tag_name == "颜值" ) return false, "暂不支持颜值区";	
+	return r.data.hls_url; 
+}
+
+
+getRooms = function(){
+	import abz.douyu.api; 
+	import win
+
+	var roomIdMap = {};
+	var rooms = {};
+	var i = 0
+	var loopOnce = function(){
+		var offset, limit = 0,99;
+		while( win.delay(1) ){
+			var r,,code	 = abz.douyu.api.getRoom(,offset,limit); ..io.print( code )
+			if( code == 500 or code == 403 ){
+				return true; 
+			}
+			if( !r ){
+				sleep(100)
+				continue ;
+			}
+			if( !#r ){
+				return true; 
+			}					
+			for(i=1;#r;1){
+				if( r[i].roomName == "企鹅直播" 
+					or ..string.indexOf(r[i].roomName,"企鹅跳转专用")
+					or r[i].roomName == "足球竞技"
+				){
+					continue;
+				} 
+					
+				var roomId = r[i].roomId;
+				if(   !roomIdMap[roomId] ){
+					..table.push( rooms, r[i] )
+					roomIdMap[roomId] = 1							
+				}			
+			}
+			offset += 99;	
+			continue ;
+		}				
+	}
+	loopOnce()	
+	return rooms; 
+}
